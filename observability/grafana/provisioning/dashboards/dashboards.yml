@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: Contacts application
+    orgId: 1
+    folder: Floci Contacts
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards

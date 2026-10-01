@@ -1,0 +1,102 @@
+services:
+  floci:
+    image: floci/floci:latest
+    container_name: floci_contacts_emulator
+    ports:
+      - "4567:4566"
+
+  wait-for-floci:
+    image: python:3.12-alpine
+    depends_on:
+      - floci
+    volumes:
+      - ./scripts/wait_for_floci.py:/wait_for_floci.py:ro
+    command: ["python", "/wait_for_floci.py"]
+    restart: "no"
+
+  infrastructure:
+    image: hashicorp/terraform:1.10.5
+    working_dir: /workspace/infra
+    environment:
+      TF_DATA_DIR: /terraform-data
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["terraform init -input=false && terraform apply -auto-approve -input=false"]
+    volumes:
+      - .:/workspace
+      - ./.terraform-data:/terraform-data
+    depends_on:
+      wait-for-floci:
+        condition: service_completed_successfully
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment: &aws_environment
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://floci:4566
+      DYNAMODB_TABLE: floci-contacts
+      AUDIT_QUEUE_NAME: floci-contact-events
+    ports:
+      - "8080:8080"
+    depends_on:
+      infrastructure:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/readyz', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  audit-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["python", "worker.py"]
+    environment:
+      <<: *aws_environment
+      AUDIT_BUCKET: floci-contact-audit
+    depends_on:
+      infrastructure:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      - api
+      - audit-worker
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-dev-only-change-me}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  prometheus_data:
+  grafana_data:

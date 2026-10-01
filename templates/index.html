@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f4f5ef">
+    <title>Fieldnotes | Contacts</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="Fieldnotes home"><span class="brand-mark">F</span><span>fieldnotes<span class="brand-period">.</span></span></a>
+        <div class="topbar-meta"><span class="live-dot"></span> LOCAL WORKSPACE <span class="meta-divider">/</span> FLOCI</div>
+        <a class="observability-link" href="http://localhost:3000" target="_blank" rel="noreferrer">Open observability <span aria-hidden="true">↗</span></a>
+      </header>
+      <main>
+        <section class="page-heading">
+          <div><p class="eyebrow">RELATIONSHIP DESK <span>01 / 04</span></p><h1>People, in good Bad order.</h1><p class="intro">A small, considered home for the people you work with.</p></div>
+          <button class="primary-button" id="add-contact" type="button"><span aria-hidden="true">+</span> Add contact</button>
+        </section>
+        <section class="stats" aria-label="Contact overview">
+          <div class="stat"><span class="stat-label">IN YOUR DIRECTORY</span><strong id="contact-count">—</strong><span class="stat-note">saved contacts</span></div>
+          <div class="stat stat-accent"><span class="stat-label">AUDIT TRAIL</span><strong>ON</strong><span class="stat-note">events archived to S3</span></div>
+          <div class="stat"><span class="stat-label">DATA STORE</span><strong class="store-status"><span class="live-dot"></span> Ready</strong><span class="stat-note">DynamoDB on Floci</span></div>
+        </section>
+        <section class="directory" aria-labelledby="directory-title">
+          <div class="directory-toolbar">
+            <div><h2 id="directory-title">Your contacts</h2><p>Keep the details that make the next conversation easier.</p></div>
+            <label class="search-box"><span class="search-icon" aria-hidden="true">⌕</span><span class="visually-hidden">Search contacts</span><input id="search" type="search" placeholder="Find someone…" autocomplete="off"></label>
+          </div>
+          <div class="table-wrap">
+            <table><thead><tr><th scope="col">NAME</th><th scope="col">EMAIL</th><th scope="col">ORGANIZATION</th><th scope="col">UPDATED</th><th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead><tbody id="contact-rows"></tbody></table>
+            <div class="empty-state" id="empty-state" hidden><span class="empty-glyph" aria-hidden="true">✳</span><h3>No contacts here yet</h3><p>Add someone to start your directory.</p><button class="text-button" id="empty-add" type="button">Create your first contact <span aria-hidden="true">→</span></button></div>
+          </div>
+        </section>
+        <p class="page-footnote"><span>FIELDNOTES / LOCAL DEMO</span><span>Changes are recorded in the audit stream.</span></p>
+      </main>
+    </div>
+    <dialog id="contact-dialog" aria-labelledby="dialog-title">
+      <form id="contact-form">
+        <div class="dialog-heading"><div><p class="eyebrow">DIRECTORY ENTRY</p><h2 id="dialog-title">Add a contact</h2></div><button class="icon-button" id="close-dialog" type="button" aria-label="Close">×</button></div>
+        <label for="name">Full name <span>*</span></label><input id="name" name="name" maxlength="200" required placeholder="e.g. Jordan Lee">
+        <label for="email">Email address <span>*</span></label><input id="email" name="email" type="email" maxlength="200" required placeholder="jordan@example.com">
+        <label for="company">Organization</label><input id="company" name="company" maxlength="200" placeholder="Where they work">
+        <p class="form-error" id="form-error" role="alert" hidden></p>
+        <div class="dialog-actions"><button class="secondary-button" id="cancel-dialog" type="button">Cancel</button><button class="primary-button" id="save-contact" type="submit">Save contact</button></div>
+      </form>
+    </dialog>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+  </body>
+</html>
